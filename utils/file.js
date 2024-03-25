@@ -5,8 +5,15 @@ import dbClient from './db';
 import userUtils from './user';
 import basicUtils from './basic';
 
+/**
+ * Module with file utilities
+ */
 const fileUtils = {
-
+  /**
+   * Validates if body is valid for creating file
+   * @request {request_object} express request obj
+   * @return {object} object with err and validated params
+   */
   async validateBody(request) {
     const {
       name, type, isPublic = false, data,
@@ -57,16 +64,34 @@ const fileUtils = {
     return obj;
   },
 
+  /**
+   * gets file document from db
+   * @query {obj} query used to find file
+   * @return {object} file
+   */
   async getFile(query) {
     const file = await dbClient.filesCollection.findOne(query);
     return file;
   },
 
+  /**
+   * gets list of file documents from db belonging
+   * to a parent id
+   * @query {obj} query used to find file
+   * @return {Array} list of files
+   */
   async getFilesOfParentId(query) {
     const fileList = await dbClient.filesCollection.aggregate(query);
     return fileList;
   },
 
+  /**
+   * saves files to database and disk
+   * @userId {string} query used to find file
+   * @fileParams {obj} object with attributes of file to save
+   * @FOLDER_PATH {string} path to save file in disk
+   * @return {obj} object with error if present and file
+   */
   async saveFile(userId, fileParams, FOLDER_PATH) {
     const {
       name, type, isPublic, data,
@@ -86,7 +111,9 @@ const fileUtils = {
     if (fileParams.type !== 'folder') {
       const fileNameUUID = uuidv4();
 
+      // const fileDataDecoded = Buffer.from(data, 'base64').toString('utf-8');
       const fileDataDecoded = Buffer.from(data, 'base64');
+
       const path = `${FOLDER_PATH}/${fileNameUUID}`;
 
       query.localPath = path;
@@ -101,6 +128,9 @@ const fileUtils = {
 
     const result = await dbClient.filesCollection.insertOne(query);
 
+    // query.userId = query.userId.toString();
+    // query.parentId = query.parentId.toString();
+
     const file = this.processFile(query);
 
     const newFile = { id: result.insertedId, ...file };
@@ -108,6 +138,12 @@ const fileUtils = {
     return { error: null, newFile };
   },
 
+  /**
+   * Updates a file document in database
+   * @query {obj} query to find document to update
+   * @set {obj} object with query info to update in Mongo
+   * @return {object} updated file
+   */
   async updateFile(query, set) {
     const fileList = await dbClient.filesCollection.findOneAndUpdate(
       query,
@@ -117,6 +153,12 @@ const fileUtils = {
     return fileList;
   },
 
+  /**
+   * Makes a file public or private
+   * @request {request_object} express request obj
+   * @setPublish {boolean} true or false
+   * @return {object} error, status code and updated file
+   */
   async publishUnpublish(request, setPublish) {
     const { id: fileId } = request.params;
 
@@ -168,15 +210,29 @@ const fileUtils = {
     return { error: null, code: 200, updatedFile };
   },
 
+  /**
+   * Transform _id into id in a file document
+   * @doc {object} document to be processed
+   * @return {object} processed document
+   */
   processFile(doc) {
+    // Changes _id for id and removes localPath
 
     const file = { id: doc._id, ...doc };
+
     delete file.localPath;
     delete file._id;
 
     return file;
   },
 
+  /**
+   * Checks if a file is public and belongs to a
+   * specific user
+   * @file {object} file to evaluate
+   * @userId {string} id of user to check ownership
+   * @return {boolean} true or false
+   */
   isOwnerAndPublic(file, userId) {
     if (
       (!file.isPublic && !userId)
@@ -186,6 +242,12 @@ const fileUtils = {
     return true;
   },
 
+  /**
+   * Gets a files data from database
+   * @file {object} file to obtain data of
+   * @size {string} size in case of file being image
+   * @return {object} data of file or error and status code
+   */
   async getFileData(file, size) {
     let { localPath } = file;
     let data;
@@ -195,6 +257,7 @@ const fileUtils = {
     try {
       data = await fsPromises.readFile(localPath);
     } catch (err) {
+      // console.log(err.message);
       return { error: 'Not found', code: 404 };
     }
 
