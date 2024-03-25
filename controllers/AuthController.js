@@ -1,10 +1,12 @@
 import { v4 as uuidv4 } from 'uuid';
-import userUtils from '../utils/user';
 import sha1 from 'sha1';
 import redisClient from '../utils/redis';
+import userUtils from '../utils/user';
 
 class AuthController {
-
+  /**
+   * Should sign-in the user by generating a new authentication token
+   */
   static async getConnect(request, response) {
     const Authorization = request.header('Authorization') || '';
 
@@ -38,6 +40,9 @@ class AuthController {
     return response.status(200).send({ token });
   }
 
+  /**
+   * Should sign-out the user based on the token
+   */
   static async getDisconnect(request, response) {
     const { userId, key } = await userUtils.getUserIdAndKey(request);
 

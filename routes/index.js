@@ -7,6 +7,7 @@ import FilesController from '../controllers/FilesController';
 function controllerRouting(app) {
   const router = express.Router();
   app.use('/', router);
+
   router.get('/status', (req, res) => {
     AppController.getStatus(req, res);
   });
@@ -14,7 +15,6 @@ function controllerRouting(app) {
   router.get('/stats', (req, res) => {
     AppController.getStats(req, res);
   });
-
 
   router.post('/users', (req, res) => {
     UsersController.postNew(req, res);

@@ -1,16 +1,18 @@
 import { ObjectId } from 'mongodb';
-import basicUtils from '../utils/basic';
 import mime from 'mime-types';
-import userUtils from '../utils/user';
 import Queue from 'bull';
+import userUtils from '../utils/user';
 import fileUtils from '../utils/file';
+import basicUtils from '../utils/basic';
 
 const FOLDER_PATH = process.env.FOLDER_PATH || '/tmp/files_manager';
 
 const fileQueue = new Queue('fileQueue');
 
 class FilesController {
-
+  /**
+   * Should create a new file in DB and in disk
+   */
   static async postUpload(request, response) {
     const { userId } = await userUtils.getUserIdAndKey(request);
 
@@ -56,6 +58,9 @@ class FilesController {
     return response.status(201).send(newFile);
   }
 
+  /**
+   * retrieve the file document based on the ID
+   */
   static async getShow(request, response) {
     const fileId = request.params.id;
 
@@ -81,6 +86,9 @@ class FilesController {
     return response.status(200).send(file);
   }
 
+  /**
+   * should retrieve all users file documents for a specific
+   */
   static async getIndex(request, response) {
     const { userId } = await userUtils.getUserIdAndKey(request);
 
@@ -129,6 +137,9 @@ class FilesController {
     return response.status(200).send(fileList);
   }
 
+  /**
+   * And return the file document with a status code 200
+   */
   static async putPublish(request, response) {
     const { error, code, updatedFile } = await fileUtils.publishUnpublish(
       request,
@@ -140,6 +151,9 @@ class FilesController {
     return response.status(code).send(updatedFile);
   }
 
+  /**
+   * return the file document with a status code 200
+   */
   static async putUnpublish(request, response) {
     const { error, code, updatedFile } = await fileUtils.publishUnpublish(
       request,
@@ -151,6 +165,9 @@ class FilesController {
     return response.status(code).send(updatedFile);
   }
 
+  /**
+   * return the content of the file document based on the ID
+   */
   static async getFile(request, response) {
     const { userId } = await userUtils.getUserIdAndKey(request);
     const { id: fileId } = request.params;
@@ -169,10 +186,15 @@ class FilesController {
         .status(400)
         .send({ error: "A folder doesn't have content" });
     }
+
     const { error, code, data } = await fileUtils.getFileData(file, size);
+
     if (error) return response.status(code).send({ error });
+
     const mimeType = mime.contentType(file.name);
+
     response.setHeader('Content-Type', mimeType);
+
     return response.status(200).send(data);
   }
 }
